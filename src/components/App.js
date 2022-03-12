@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 import utils from "../utils";
 import PlayAgain from "./PlayAgain";
@@ -9,14 +9,29 @@ function App() {
     const [stars, setStars] = useState(utils.random(1, 9));
     const [availableNums, setAvailableNums] = useState(utils.range(1, 9));
     const [candidateNums, setCandidateNums] = useState([]);
+    const [secondsLeft, setSecondsLeft] = useState(10);
+
+    useEffect(() => {
+        if (secondsLeft > 0 && availableNums.length > 0) {
+            // Sets up a new timer after every re-render
+            const timerId = setTimeout(() => { setSecondsLeft(secondsLeft - 1) }, 1000);
+            // Cleans the timer after every re-render
+            // Important for not creating a setTimeout after every re-render, without cleaning the previous one
+            return () => clearTimeout(timerId);
+        }
+    });
 
     const candidatesAreWrong = utils.sum(candidateNums) > stars;
-    const gameIsDone = availableNums.length === 0;
+    const gameStatus = availableNums.length === 0
+        ? 'won'
+        : secondsLeft === 0 ? 'lost' : 'active';
+
 
     const resetGame = () => {
         setStars(utils.random(1, 9));
         setAvailableNums(utils.range(1, 9));
         setCandidateNums([]);
+        setSecondsLeft(10);
     }
 
     const numberStatus = number => {
@@ -30,7 +45,7 @@ function App() {
     };
 
     const onNumberClick = (number, currentStatus) => {
-        if (currentStatus === 'used') {
+        if (gameStatus !== 'active' || currentStatus === 'used') {
             return;
         }
 
@@ -59,8 +74,8 @@ function App() {
 
             <main className="body">
                 <aside className="left">
-                    {gameIsDone ? (
-                        <PlayAgain onClick={resetGame} />
+                    {gameStatus !== 'active' ? (
+                        <PlayAgain onClick={resetGame} gameStatus={gameStatus} />
                     ) : (
                         <StarsDisplay count={stars} />
                     )}
@@ -79,7 +94,7 @@ function App() {
             </main>
 
             <div className="timer">
-                Time Remaining: 10
+                Time Remaining: {secondsLeft}
             </div>
         </div>
     )
